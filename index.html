@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Warscythe 50k</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fjalla+One&family=Roboto+Condensed:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css"></head>
+<body>
+    <div class="header">
+        <div class="container">
+            <div class="navbar">
+                <div class="logo">
+                    <img src="images/logo.png" width="125px">
+                </div>
+                <nav>
+                    <ul id="MenuItems">
+                        <li><a href="">Home</a></li>
+                        <li><a href="">Products</a></li>
+                        <li><a href="" id="AuthLink">Login</a></li>
+                    </ul>
+                </nav>
+                <img src="images/cart.png" width="30px" height="30px">
+                <img src="images/menu.png" class="menu-icon" onclick="menutoggle()">
+            </div>
+            <div class="row">
+                <div class="col-2">
+                    <h1>In the grim darkness of future there is only planszówki</h1>
+                    <p>Choose your way of spending time with the close ones,
+                    using a great variety of our shop. <br>
+                    Beware of what treasures of the dark age of entartainment you may find here</p>
+                    <a href="#products" class="btn">Explore Now &#8594;</a>
+                </div>
+                <div class="col-2">
+                    <img src="images/planszowy.webp">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="small-container" id="products">
+        <h2 class="title">Featuer products</h2>
+        <div class="search-box" style="text-align: center; margin-bottom: 20px;">
+            <input type="text" id="searchInput" placeholder="Search for games..." 
+                style="padding: 8px; border-radius: 20px; border: 1px solid #0A3200; width: 250px;">
+        </div>
+        <div class="filter-buttons">
+            <span onclick="filterSelection('all')" class="filter-btn active">All</span>
+            <span onclick="filterSelection('wargames')" class="filter-btn">Wargames</span>
+            <span onclick="filterSelection('party')" class="filter-btn">Party Games</span>
+            <span onclick="filterSelection('rpg')" class="filter-btn">RPGs</span>
+        </div>
+        <div class="row">
+            <div class="col-4 filter-item wargames">
+                <img src="images/frostpunk.webp">
+                <h4>Frost punk</h4>
+                <div class="rating">
+                    <i class="fa-solid fa-star"></i>
+                    <i class="fa-solid fa-star"></i>
+                    <i class="fa-solid fa-star"></i>
+                    <i class="fa-solid fa-star"></i>
+                    <i class="fa-regular fa-star"></i> 
+                </div>
+                <p>$40.00</p>
+            </div>
+            <div class="col-4 filter-item party">
+                <img src="images/monopoly.webp">
+                <h4>Monopoly</h4>
+                <div class="rating">
+                    <i class="fa-solid fa-star"></i>
+                    <i class="fa-solid fa-star"></i>
+                    <i class="fa-solid fa-star"></i>
+                    <i class="fa-solid fa-star"></i>
+                    <i class="fa-regular fa-star"></i> 
+                </div>
+                <p>$20.00</p>
+            </div>
+            <div class="col-4 filter-item rpg">
+                <img src="images/slaythespire.webp">
+                <h4>Slay the spire</h4>
+                <div class="rating">
+                    <i class="fa-solid fa-star"></i>
+                    <i class="fa-solid fa-star"></i>
+                    <i class="fa-solid fa-star"></i>
+                    <i class="fa-solid fa-star"></i>
+                    <i class="fa-regular fa-star"></i> 
+                </div>
+                <p>$25.00</p>
+            </div>
+            <div class="col-4 filter-item rpg">
+                <img src="images/witcher.webp">
+                <h4>Witcher</h4>
+                <div class="rating">
+                    <i class="fa-solid fa-star"></i>
+                    <i class="fa-solid fa-star"></i>
+                    <i class="fa-solid fa-star"></i>
+                    <i class="fa-solid fa-star"></i>
+                    <i class="fa-regular fa-star"></i> 
+                </div>
+                <p>$50.00</p>
+            </div>
+        </div>
+        <div class="add-product-box" style="text-align: right; margin-bottom: 20px;">
+            <a href="index2.html" class="btn" onclick="addNewProduct()">+ Add New Product</a>
+        </div>
+    </div>
+
+    <div class="offer">
+        <div class="small-container">
+            <div class="row">
+                <div class="col-2">
+                    <img src="images/warhammer.png" class="offer-img">
+                </div>
+                <div class="col-2">
+                    <p>Not exlusively available on Warsythe 50k</p>
+                    <h1>Warhammer munchkin</h1>
+                    <small>Munchkin and Warhammer 40,000 – two great games that work great together!
+                    Become an Ultramarine, Necron, Aeldari, Ork, Death Guard, or Tyranid. 
+                    Make a Pilgrimage to Holy Terra, use your Lasblaster, and of course you need 
+                    More Dakka! Be vigilant; you might encounter the Sloppity Bilepiper, 
+                    a Horror of Tzeentch, or even Mortarion himself!</small><br>
+                    <a href="" class="btn">Buy now &#8594;</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <div class="container">
+            <div class="row">
+                <div class="footer-col-1">
+                    <h3>Download our app</h3>
+                    <p>Download our app please please please please</p>
+                    <div class="app-logo">
+                        <img src="images/play-store.png">
+                        <img src="images/app-store.png">
+                    </div>
+                </div>
+                <div class="footer-col-2">
+                    <img src="images/logo.png">
+                    <p>Our puprpouse is to spread joy and laughter acroos the globe</p>
+                </div>
+                <div class="footer-col-3">
+                    <h3>No links</h3>
+                    <ul>
+                        <li>Coupons</li>
+                        <li>Blog post</li>
+                        <li>Return policy</li>
+                        <li>Join affiliate</li>
+                    </ul>
+                </div>
+                <div class="footer-col-4">
+                    <h3>Follow us</h3>
+                    <ul>
+                        <li>Facebook</li>
+                        <li>Tiktok</li>
+                        <li>Instagram</li>
+                        <li>YouTube</li>
+                    </ul>
+                </div>
+            </div>
+            <hr>
+            <p class="copyright">For study purposes only</p>
+        </div>
+    </div>
+
+    <script>
+        var MenuItems = document.getElementById("MenuItems");
+
+        MenuItems.style.maxHeight = "0px";
+
+        function menutoggle() {
+            if (MenuItems.style.maxHeight == "0px") {
+                MenuItems.style.maxHeight = "200px";
+            } else {
+                MenuItems.style.maxHeight = "0px";
+            }
+        }
+
+        function filterSelection(category) {
+            var items = document.getElementsByClassName("filter-item");
+            var buttons = document.getElementsByClassName("filter-btn");
+
+            for (var b of buttons) {
+                if (b.innerText.toLowerCase() === category || (category === 'all' && b.innerText === 'All')) {
+                    b.classList.add("active");
+                } else {
+                    b.classList.remove("active");
+                }
+            }
+
+            for (var i = 0; i < items.length; i++) {
+                if (category == "all") {
+                    items[i].classList.remove("hide");
+                } else {
+                    if (items[i].classList.contains(category)) {
+                        items[i].classList.remove("hide");
+                    } else {
+                        items[i].classList.add("hide");
+                    }
+                }
+            }
+        }
+
+        let isLoggedIn = false;
+
+        const authLink = document.getElementById("AuthLink");
+        if (authLink) {
+            authLink.innerText = isLoggedIn ? "Logout" : "Login";
+        }
+
+
+    </script>
+</body>
+</html>
