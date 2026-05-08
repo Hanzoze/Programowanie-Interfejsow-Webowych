@@ -1,9 +1,13 @@
 "use client";
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { BOARD_GAMES } from './data';
+import { db } from "@/app/lib/firebase";
+import { collection, onSnapshot, query } from "firebase/firestore";
 
 export default function Home() {
+    const [boardGames, setBoardGames] = useState([]); 
+    const [loading, setLoading] = useState(true);
+    
     const [search, setSearch] = useState("");
     const [category, setCategory] = useState("all");
     const [playerCount, setPlayerCount] = useState("all"); 
@@ -12,9 +16,22 @@ export default function Home() {
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 6;
 
-    const genres = ["all", ...new Set(BOARD_GAMES.map(g => g.type).filter(Boolean))];
+    useEffect(() => {
+        const q = query(collection(db, "games"));
+        const unsubscribe = onSnapshot(q, (querySnapshot) => {
+            const gamesArray = [];
+            querySnapshot.forEach((doc) => {
+                gamesArray.push({ ...doc.data(), id: doc.id });
+            });
+            setBoardGames(gamesArray);
+            setLoading(false);
+        });
+        return () => unsubscribe();
+    }, []);
 
-    const filtered = BOARD_GAMES.filter(game => {
+    const genres = ["all", ...new Set(boardGames.map(g => g.type).filter(Boolean))];
+
+    const filtered = boardGames.filter(game => {
       const matchesSearch = (game.title || "").toLowerCase().includes(search.toLowerCase());
       const matchesGenre = category === "all" || game.type === category;
       const matchesPrice = game.price_pln <= Number(maxPrice);
@@ -38,6 +55,8 @@ export default function Home() {
         setCurrentPage(pageNumber);
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
+
+    if (loading) return <div className="small-container"><p>Ładowanie gier...</p></div>;
 
     return (
         <main className="small-container">
@@ -100,12 +119,13 @@ export default function Home() {
                     <div className="row">
                         {currentItems.map(game => (
                             <div key={game.id} className="col-4">
-                                <Link href={`/product/${game.id}`}>
+                                <Link href={`/product/${game.id}`} className={!game.isAvailable ? "sold-out" : ""}>
                                     <div className="card">
-                                        <img src={game.images[0] ? `/${game.images[0]}` : "/img/placeholder.webp"} alt={game.title} />
+                                        <img src={game.images?.[0] ? `/${game.images[0]}` : "/img/placeholder.webp"} alt={game.title} />
                                         <h4>{game.title}</h4>
                                         <p className="price">{game.price_pln} PLN</p>
                                         <small>{game.min_players}-{game.max_players} os. | {game.is_expansion ? "Dodatek" : "Gra"}</small>
+                                        {!game.isAvailable && <p style={{color: 'red', fontWeight: 'bold'}}>NIEDOSTĘPNE</p>}
                                     </div>
                                 </Link>
                             </div>

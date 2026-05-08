@@ -402,6 +402,100 @@ nav ul li a:hover {
     font-size: 12px;
 }
 
+.account-page {
+    padding: 100px 0;
+    background: radial-gradient(#fff, #f0f0f0);
+}
+
+.form-container {
+    background: #fff;
+    width: 100%;
+    max-width: 400px;
+    margin: auto;
+    padding: 20px 0;
+    box-shadow: 0 0 20px 0 rgba(0,0,0,0.1);
+    border-radius: 8px;
+    text-align: center;
+    transition: height 0.3s;
+}
+
+.form-btn {
+    display: flex;
+    justify-content: space-around;
+    margin-bottom: 20px;
+}
+
+.form-btn span {
+    font-weight: bold;
+    padding: 0 10px;
+    color: #555;
+    cursor: pointer;
+    font-size: 18px;
+    position: relative;
+}
+
+.form-btn span.active {
+    color: #000000;
+}
+
+.form-btn span.active::after {
+    content: '';
+    width: 100%;
+    height: 3px;
+    background: #000000;
+    position: absolute;
+    bottom: -5px;
+    left: 0;
+}
+
+.auth-form {
+    padding: 0 30px;
+}
+
+.auth-form input {
+    width: 100%;
+    margin-bottom: 15px;
+}
+
+.auth-form .btn-submit {
+    width: 100%;
+    border: none;
+    background: #0A3200;
+}
+
+.social-login {
+    padding: 0 30px;
+    margin-top: 20px;
+}
+
+.social-login p {
+    font-size: 12px;
+    margin-bottom: 15px;
+}
+
+.google-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    background: #fff;
+    color: #555;
+    border: 1px solid #ddd;
+}
+
+.nav-link {
+    color: #ffffff;
+    font-weight: 600;
+    font-size: 18px;
+    cursor: pointer;
+    transition: color 0.3s;
+}
+
+.nav-link:hover {
+    color: #72cd56;
+}
+
 @media only screen and (max-width: 800px) {
     .main-layout {
         flex-direction: column;
