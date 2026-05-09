@@ -87,7 +87,6 @@ export default function Home() {
         }
     };
 
-    // Filtry po cenie, graczach, szukaniu i expansions (gdy category jest aktywne) — lokalnie w JS
     const filteredItems = boardGames.filter(game => {
         const matchesSearch = (game.title || "").toLowerCase().includes(search.toLowerCase());
         const matchesPrice = game.price_pln <= Number(maxPrice);
@@ -95,7 +94,6 @@ export default function Home() {
             Number(playerCount) >= game.min_players &&
             Number(playerCount) <= game.max_players
         );
-        // Jeśli category jest aktywne, is_expansion filtrujemy lokalnie (bo where("type") już jest w query)
         const matchesExpansion = isExpansion === "all" || (
             isExpansion === "expansion" ? game.is_expansion === true : game.is_expansion === false
         );
