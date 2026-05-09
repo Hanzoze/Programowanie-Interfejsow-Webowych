@@ -1,80 +1,94 @@
 "use client";
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { db } from "@/app/lib/firebase";
-import { collection, query, orderBy, limit, startAfter, getDocs } from "firebase/firestore";
+import { collection, query, orderBy, limit, startAfter, getDocs, where } from "firebase/firestore";
 
 export default function Home() {
     const [lastDoc, setLastDoc] = useState(null);
     const [boardGames, setBoardGames] = useState([]); 
     const [loading, setLoading] = useState(true);
+    const [loadingMore, setLoadingMore] = useState(false);
     
     const [search, setSearch] = useState("");
     const [category, setCategory] = useState("all");
     const [playerCount, setPlayerCount] = useState("all"); 
     const [isExpansion, setIsExpansion] = useState("all"); 
-    const [maxPrice, setMaxPrice] = useState(500);
+    const [maxPrice, setMaxPrice] = useState(1000);
+
+    const buildQuery = useCallback((lastVisible = null) => {
+        let constraints = [collection(db, "games"), orderBy("createdAt", "desc")];
+
+        if (category !== "all") {
+            constraints.push(where("type", "==", category));
+        }
+
+        if (isExpansion !== "all") {
+            const val = isExpansion === "expansion";
+            constraints.push(where("is_expansion", "==", val));
+        }
+
+        if (lastVisible) {
+            constraints.push(startAfter(lastVisible));
+        }
+        
+        constraints.push(limit(6));
+
+        return query(...constraints);
+    }, [category, isExpansion]);
 
     useEffect(() => {
-        fetchInitialGames();
-    }, []);
+        const fetchInitial = async () => {
+            setLoading(true);
+            try {
+                const q = buildQuery();
+                const snapshot = await getDocs(q);
+                const games = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+                
+                setBoardGames(games);
+                setLastDoc(snapshot.docs[snapshot.docs.length - 1]);
+            } catch (error) {
+                console.error("Błąd pobierania:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
 
-    const fetchInitialGames = async () => {
-        setLoading(true);
-        try {
-            const q = query(
-                collection(db, "games"),
-                orderBy("createdAt", "desc"),
-                limit(6)
-            );
-            const snapshot = await getDocs(q);
-            const games = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
-            
-            setBoardGames(games);
-            setLastDoc(snapshot.docs[snapshot.docs.length - 1]);
-        } catch (error) {
-            console.error("Błąd paginacji:", error);
-        } finally {
-            setLoading(false);
-        }
-    };
+        fetchInitial();
+    }, [buildQuery]);
 
     const fetchMoreGames = async () => {
-        if (!lastDoc) return;
+        if (!lastDoc || loadingMore) return;
+        setLoadingMore(true);
 
-        const nextQ = query(
-            collection(db, "games"),
-            orderBy("createdAt", "desc"),
-            startAfter(lastDoc),
-            limit(6)
-        );
-
-        const snapshot = await getDocs(nextQ);
-        if (snapshot.empty) {
-            setLastDoc(null);
-            return;
+        try {
+            const q = buildQuery(lastDoc);
+            const snapshot = await getDocs(q);
+            
+            if (snapshot.empty) {
+                setLastDoc(null);
+            } else {
+                const newGames = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+                setBoardGames(prev => [...prev, ...newGames]);
+                setLastDoc(snapshot.docs[snapshot.docs.length - 1]);
+            }
+        } catch (error) {
+            console.error("Błąd doczytywania:", error);
+        } finally {
+            setLoadingMore(false);
         }
-
-        const newGames = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
-        setBoardGames(prev => [...prev, ...newGames]);
-        setLastDoc(snapshot.docs[snapshot.docs.length - 1]);
     };
 
-    const genres = ["all", ...new Set(boardGames.map(g => g.type).filter(Boolean))];
-
-    const filtered = boardGames.filter(game => {
-      const matchesSearch = (game.title || "").toLowerCase().includes(search.toLowerCase());
-      const matchesGenre = category === "all" || game.type === category;
-      const matchesPrice = game.price_pln <= Number(maxPrice);
-      const matchesPlayers = playerCount === "all" || (
-          Number(playerCount) >= game.min_players && Number(playerCount) <= game.max_players
-      );
-      const matchesType = isExpansion === "all" || (
-          isExpansion === "expansion" ? game.is_expansion === true : game.is_expansion === false
-      );
-      return matchesSearch && matchesGenre && matchesPrice && matchesPlayers && matchesType;
+    const filteredItems = boardGames.filter(game => {
+        const matchesSearch = game.title.toLowerCase().includes(search.toLowerCase());
+        const matchesPrice = game.price_pln <= Number(maxPrice);
+        const matchesPlayers = playerCount === "all" || (
+            Number(playerCount) >= game.min_players && Number(playerCount) <= game.max_players
+        );
+        return matchesSearch && matchesPrice && matchesPlayers;
     });
 
+    const genres = ["all", "ekonomiczna", "przygodowa", "rodzinna", "towarzyska", "strategiczna"];
     if (loading) return <div className="small-container"><p>Ładowanie gier...</p></div>;
 
     return (
@@ -82,6 +96,7 @@ export default function Home() {
             <div className="main-layout">
                 <aside className="sidebar">
                     <h3>Filtry</h3>
+                    
                     <div className="filter-group">
                         <h4>Gatunek</h4>
                         {genres.map(gen => (
@@ -91,16 +106,26 @@ export default function Home() {
                             </label>
                         ))}
                     </div>
+
+                    <div className="filter-group">
+                        <h4>Typ produktu</h4>
+                        <select className="search-input" style={{width: '100%'}} value={isExpansion} onChange={(e) => setIsExpansion(e.target.value)}>
+                            <option value="all">Wszystko</option>
+                            <option value="base">Gry podstawowe</option>
+                            <option value="expansion">Dodatki</option>
+                        </select>
+                    </div>
+
                     <div className="filter-group">
                         <h4>Liczba graczy</h4>
-                        <select className="search-input" style={{width: '100%'}} onChange={(e) => setPlayerCount(e.target.value)}>
+                        <select className="search-input" style={{width: '100%'}} value={playerCount} onChange={(e) => setPlayerCount(e.target.value)}>
                             <option value="all">Dowolna</option>
                             <option value="1">1 gracz</option>
                             <option value="2">2 graczy</option>
-                            <option value="3">3 graczy</option>
                             <option value="4">4+ graczy</option>
                         </select>
                     </div>
+
                     <div className="filter-group">
                         <h4>Cena do: {maxPrice} PLN</h4>
                         <input type="range" min="0" max="1000" value={maxPrice} onChange={(e) => setMaxPrice(e.target.value)} style={{width: '100%'}} />
@@ -108,10 +133,10 @@ export default function Home() {
                 </aside>
 
                 <section style={{ flex: '3' }}>
-                    <input type="text" placeholder="Szukaj gry..." className="search-input" style={{width: '100%', marginBottom: '20px'}} onChange={(e) => setSearch(e.target.value)}/>
+                    <input type="text" placeholder="Szukaj gry po tytule..." className="search-input" style={{width: '100%', marginBottom: '20px'}} onChange={(e) => setSearch(e.target.value)}/>
                     
                     <div className="row">
-                        {filtered.map(game => (
+                        {filteredItems.map(game => (
                             <div key={game.id} className="col-4">
                                 <Link href={`/product/${game.id}`}>
                                     <div className="card">
@@ -131,7 +156,9 @@ export default function Home() {
 
                     {lastDoc && (
                         <div style={{textAlign: 'center', marginTop: '30px'}}>
-                            <button className="btn" onClick={fetchMoreGames}>Pokaż więcej</button>
+                            <button className="btn" onClick={fetchMoreGames} disabled={loadingMore}>
+                                {loadingMore ? "Ładowanie..." : "Pokaż więcej"}
+                            </button>
                         </div>
                     )}
                 </section>
