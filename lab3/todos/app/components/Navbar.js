@@ -14,6 +14,7 @@ export default function Navbar() {
         <ul id="MenuItems">
           <li><Link href="/">Home</Link></li>
           <li><Link href="/#products">Products</Link></li>
+          <li><Link href="/add-game">Dodaj grę</Link></li>
           
           {user ? (
             <>

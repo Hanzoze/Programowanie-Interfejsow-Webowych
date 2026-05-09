@@ -2,9 +2,10 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { db } from "@/app/lib/firebase";
-import { collection, onSnapshot, query } from "firebase/firestore";
+import { collection, query, orderBy, limit, startAfter, getDocs } from "firebase/firestore";
 
 export default function Home() {
+    const [lastDoc, setLastDoc] = useState(null);
     const [boardGames, setBoardGames] = useState([]); 
     const [loading, setLoading] = useState(true);
     
@@ -13,21 +14,51 @@ export default function Home() {
     const [playerCount, setPlayerCount] = useState("all"); 
     const [isExpansion, setIsExpansion] = useState("all"); 
     const [maxPrice, setMaxPrice] = useState(500);
-    const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 6;
 
     useEffect(() => {
-        const q = query(collection(db, "games"));
-        const unsubscribe = onSnapshot(q, (querySnapshot) => {
-            const gamesArray = [];
-            querySnapshot.forEach((doc) => {
-                gamesArray.push({ ...doc.data(), id: doc.id });
-            });
-            setBoardGames(gamesArray);
-            setLoading(false);
-        });
-        return () => unsubscribe();
+        fetchInitialGames();
     }, []);
+
+    const fetchInitialGames = async () => {
+        setLoading(true);
+        try {
+            const q = query(
+                collection(db, "games"),
+                orderBy("createdAt", "desc"),
+                limit(6)
+            );
+            const snapshot = await getDocs(q);
+            const games = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+            
+            setBoardGames(games);
+            setLastDoc(snapshot.docs[snapshot.docs.length - 1]);
+        } catch (error) {
+            console.error("Błąd paginacji:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const fetchMoreGames = async () => {
+        if (!lastDoc) return;
+
+        const nextQ = query(
+            collection(db, "games"),
+            orderBy("createdAt", "desc"),
+            startAfter(lastDoc),
+            limit(6)
+        );
+
+        const snapshot = await getDocs(nextQ);
+        if (snapshot.empty) {
+            setLastDoc(null);
+            return;
+        }
+
+        const newGames = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+        setBoardGames(prev => [...prev, ...newGames]);
+        setLastDoc(snapshot.docs[snapshot.docs.length - 1]);
+    };
 
     const genres = ["all", ...new Set(boardGames.map(g => g.type).filter(Boolean))];
 
@@ -35,26 +66,14 @@ export default function Home() {
       const matchesSearch = (game.title || "").toLowerCase().includes(search.toLowerCase());
       const matchesGenre = category === "all" || game.type === category;
       const matchesPrice = game.price_pln <= Number(maxPrice);
-      
       const matchesPlayers = playerCount === "all" || (
-          Number(playerCount) >= game.min_players && 
-          Number(playerCount) <= game.max_players
+          Number(playerCount) >= game.min_players && Number(playerCount) <= game.max_players
       );
-      
       const matchesType = isExpansion === "all" || (
           isExpansion === "expansion" ? game.is_expansion === true : game.is_expansion === false
       );
-
       return matchesSearch && matchesGenre && matchesPrice && matchesPlayers && matchesType;
     });
-
-    const totalPages = Math.ceil(filtered.length / itemsPerPage);
-    const currentItems = filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
-
-    const goToPage = (pageNumber) => {
-        setCurrentPage(pageNumber);
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    };
 
     if (loading) return <div className="small-container"><p>Ładowanie gier...</p></div>;
 
@@ -63,37 +82,18 @@ export default function Home() {
             <div className="main-layout">
                 <aside className="sidebar">
                     <h3>Filtry</h3>
-                    
                     <div className="filter-group">
                         <h4>Gatunek</h4>
                         {genres.map(gen => (
                             <label key={gen} className="radio-container">
-                                <input type="radio" name="genre" checked={category === gen} onChange={() => { setCategory(gen); setCurrentPage(1); }} />
-                                <span className="checkmark"></span>
-                                {gen === 'all' ? 'Wszystkie' : gen}
+                                <input type="radio" name="genre" checked={category === gen} onChange={() => setCategory(gen)} />
+                                <span className="checkmark"></span> {gen === 'all' ? 'Wszystkie' : gen}
                             </label>
                         ))}
                     </div>
-
-                    <div className="filter-group">
-                        <h4>Typ produktu</h4>
-                        <label className="radio-container">
-                            <input type="radio" name="type" checked={isExpansion === "all"} onChange={() => {setIsExpansion("all"); setCurrentPage(1)}} />
-                            <span className="checkmark"></span> Wszystko
-                        </label>
-                        <label className="radio-container">
-                            <input type="radio" name="type" checked={isExpansion === "base"} onChange={() => {setIsExpansion("base"); setCurrentPage(1)}} />
-                            <span className="checkmark"></span> Gry podstawowe
-                        </label>
-                        <label className="radio-container">
-                            <input type="radio" name="type" checked={isExpansion === "expansion"} onChange={() => {setIsExpansion("expansion"); setCurrentPage(1)}} />
-                            <span className="checkmark"></span> Dodatki
-                        </label>
-                    </div>
-
                     <div className="filter-group">
                         <h4>Liczba graczy</h4>
-                        <select className="search-input" style={{width: '100%'}} onChange={(e) => {setPlayerCount(e.target.value); setCurrentPage(1)}}>
+                        <select className="search-input" style={{width: '100%'}} onChange={(e) => setPlayerCount(e.target.value)}>
                             <option value="all">Dowolna</option>
                             <option value="1">1 gracz</option>
                             <option value="2">2 graczy</option>
@@ -101,63 +101,37 @@ export default function Home() {
                             <option value="4">4+ graczy</option>
                         </select>
                     </div>
-
                     <div className="filter-group">
                         <h4>Cena do: {maxPrice} PLN</h4>
-                        <input type="range" min="0" max="500" value={maxPrice} onChange={(e) => {setMaxPrice(e.target.value); setCurrentPage(1)}} style={{width: '100%'}} />
+                        <input type="range" min="0" max="1000" value={maxPrice} onChange={(e) => setMaxPrice(e.target.value)} style={{width: '100%'}} />
                     </div>
                 </aside>
 
                 <section style={{ flex: '3' }}>
-                    <input 
-                        type="text" 
-                        placeholder="Szukaj..." 
-                        className="search-input" 
-                        style={{width: '100%', marginBottom: '20px'}}
-                        onChange={(e) => {setSearch(e.target.value); setCurrentPage(1)}}/>
+                    <input type="text" placeholder="Szukaj gry..." className="search-input" style={{width: '100%', marginBottom: '20px'}} onChange={(e) => setSearch(e.target.value)}/>
                     
                     <div className="row">
-                        {currentItems.map(game => (
+                        {filtered.map(game => (
                             <div key={game.id} className="col-4">
-                                <Link href={`/product/${game.id}`} className={!game.isAvailable ? "sold-out" : ""}>
+                                <Link href={`/product/${game.id}`}>
                                     <div className="card">
-                                        <img src={game.images?.[0] ? `/${game.images[0]}` : "/img/placeholder.webp"} alt={game.title} />
+                                        <img 
+                                            src={game.images?.[0]?.startsWith('http') ? game.images[0] : `/${game.images?.[0] || 'img/placeholder.webp'}`} 
+                                            alt={game.title} 
+                                            style={{ objectFit: 'cover', height: '200px', width: '100%' }}
+                                        />
                                         <h4>{game.title}</h4>
                                         <p className="price">{game.price_pln} PLN</p>
-                                        <small>{game.min_players}-{game.max_players} os. | {game.is_expansion ? "Dodatek" : "Gra"}</small>
-                                        {!game.isAvailable && <p style={{color: 'red', fontWeight: 'bold'}}>NIEDOSTĘPNE</p>}
+                                        {!game.isAvailable && <p style={{color: 'red', fontWeight: 'bold'}}>SPRZEDANE</p>}
                                     </div>
                                 </Link>
                             </div>
                         ))}
                     </div>
 
-                    {totalPages > 1 && (
-                        <div className="pagination">
-                            <button 
-                                onClick={() => goToPage(currentPage - 1)} 
-                                disabled={currentPage === 1}
-                                className="page-btn">
-                                &#8592;
-                            </button>
-
-                            {[...Array(totalPages)].map((_, index) => (
-                                <button
-                                    key={index + 1}
-                                    onClick={() => goToPage(index + 1)}
-                                    className={`page-btn ${currentPage === index + 1 ? 'active' : ''}`}
-                                >
-                                    {index + 1}
-                                </button>
-                            ))}
-
-                            <button 
-                                onClick={() => goToPage(currentPage + 1)} 
-                                disabled={currentPage === totalPages}
-                                className="page-btn"
-                            >
-                                &#8594;
-                            </button>
+                    {lastDoc && (
+                        <div style={{textAlign: 'center', marginTop: '30px'}}>
+                            <button className="btn" onClick={fetchMoreGames}>Pokaż więcej</button>
                         </div>
                     )}
                 </section>

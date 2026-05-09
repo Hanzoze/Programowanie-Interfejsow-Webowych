@@ -87,10 +87,8 @@ nav ul li a:hover {
 
 .row {
     display: flex;
-    align-items: flex-start; 
     flex-wrap: wrap;
-    justify-content: space-around;
-    gap: 20px;
+    align-items: flex-start;
 }
 
 .col-4 {
@@ -496,6 +494,51 @@ nav ul li a:hover {
     color: #72cd56;
 }
 
+.product-img-container {
+    width: 100%;
+    height: 400px; 
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f4f4f4;
+    border-radius: 8px;
+}
+
+.product-img-container img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain; 
+    transition: transform 0.3s ease;
+}
+
+.thumbnail-list {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+    overflow-x: auto;
+    padding-bottom: 5px;
+}
+
+.thumbnail-item {
+    width: 80px;
+    height: 80px;
+    cursor: pointer;
+    border: 2px solid transparent;
+    border-radius: 4px;
+    object-fit: cover;
+}
+
+.thumbnail-item.active {
+    border-color: #1e4714;
+}
+
+.col-2 {
+    flex: 1;
+    min-width: 300px;
+    padding: 20px;
+}
+
 @media only screen and (max-width: 800px) {
     .main-layout {
         flex-direction: column;
@@ -515,5 +558,14 @@ nav ul li a:hover {
 @media only screen and (max-width: 600px) {
     .col-4 {
         flex-basis: 100%;
+    }
+}
+
+@media (max-width: 768px) {
+    .col-2 {
+        flex-basis: 100%;
+    }
+    .product-img-container {
+        height: 300px;
     }
 }
