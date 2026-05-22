@@ -1,11 +1,11 @@
 "use client";
-import { use, useState, useEffect } from "react";
+import { use, useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { useAuth } from "@/app/context/AuthContext";
 import { db, storage } from "@/app/lib/firebase";
-import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 const ALL_GENRES = ["ekonomiczna", "przygodowa", "abstrakcyjna", "rodzinna", "towarzyska", "kooperacyjna", "karciana", "zręcznościowa"];
 
@@ -21,6 +21,8 @@ export default function EditProductPage({ params: paramsPromise }) {
     const [isUploading, setIsUploading] = useState(false);
     const [errors, setErrors] = useState({});
 
+    const descriptionRef = useRef(null);
+
     useEffect(() => {
         const fetchGame = async () => {
             const docRef = doc(db, "games", gameId);
@@ -28,13 +30,19 @@ export default function EditProductPage({ params: paramsPromise }) {
 
             if (docSnap.exists()) {
                 const gameData = docSnap.data();
+                
+                const flatDescription = Array.isArray(gameData.description)
+                    ? gameData.description.join("\n")
+                    : (gameData.description || "");
+
                 setFormData({
                     ...gameData,
-                    id: docSnap.id,
-                    description: Array.isArray(gameData.description)
-                        ? gameData.description.join("\n")
-                        : (gameData.description || "")
+                    id: docSnap.id
                 });
+
+                if (descriptionRef.current) {
+                    descriptionRef.current.value = flatDescription;
+                }
             } else {
                 alert("Nie znaleziono gry w bazie!");
                 router.push("/");
@@ -44,6 +52,15 @@ export default function EditProductPage({ params: paramsPromise }) {
 
         fetchGame();
     }, [gameId, router]);
+
+    useEffect(() => {
+        if (!loading && formData && descriptionRef.current) {
+            const flatDescription = Array.isArray(formData.description)
+                ? formData.description.join("\n")
+                : (formData.description || "");
+            descriptionRef.current.value = flatDescription;
+        }
+    }, [loading, formData]);
 
     if (loading || !formData) return <div className="small-container">Ładowanie...</div>;
 
@@ -103,6 +120,8 @@ export default function EditProductPage({ params: paramsPromise }) {
             return;
         }
 
+        const currentDescriptionValue = descriptionRef.current ? descriptionRef.current.value : "";
+
         setIsUploading(true);
         try {
             let imageUrls = formData.images || [];
@@ -126,8 +145,8 @@ export default function EditProductPage({ params: paramsPromise }) {
                 min_players: parseInt(formData.min_players),
                 max_players: parseInt(formData.max_players),
                 avg_play_time_minutes: parseInt(formData.avg_play_time_minutes),
-                description: formData.description
-                    ? formData.description.split("\n").filter(line => line.trim() !== "")
+                description: currentDescriptionValue
+                    ? currentDescriptionValue.split("\n").filter(line => line.trim() !== "")
                     : [],
                 is_expansion: formData.is_expansion,
                 publisher: formData.publisher?.trim() || "",
@@ -143,17 +162,14 @@ export default function EditProductPage({ params: paramsPromise }) {
         }
     };
 
-    const inputStyle = (field) => ({
-        width: '100%',
-        borderColor: errors[field] ? '#e53e3e' : undefined
-    });
+    const inputClassName = (field) => `search-input ${errors[field] ? 'input-error-border' : ''}`;
 
     const ErrorMsg = ({ field }) => errors[field]
-        ? <p style={{ color: '#e53e3e', fontSize: '12px', marginTop: '4px' }}>{errors[field]}</p>
+        ? <p className="error-message-text" style={{ color: '#e53e3e', fontSize: '12px', marginTop: '4px' }}>{errors[field]}</p>
         : null;
 
     return (
-        <div className="small-container" style={{marginTop: '50px', marginBottom: '50px'}}>
+        <div className="small-container edit-page-container">
             <h2 className="title">Edytuj grę: {formData.title}</h2>
 
             <form onSubmit={handleSave} className="edit-form">
@@ -164,8 +180,7 @@ export default function EditProductPage({ params: paramsPromise }) {
                         name="title"
                         value={formData.title}
                         onChange={handleChange}
-                        className="search-input"
-                        style={inputStyle('title')}
+                        className={inputClassName('title')}
                     />
                     <ErrorMsg field="title" />
                 </div>
@@ -173,25 +188,18 @@ export default function EditProductPage({ params: paramsPromise }) {
                 {formData.images && formData.images.length > 0 && (
                     <div className="form-group">
                         <label>Aktualne zdjęcia (kliknij ✕ aby usunąć):</label>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '8px' }}>
+                        <div className="existing-images-wrapper">
                             {formData.images.map((img, index) => (
-                                <div key={index} style={{ position: 'relative', width: '100px', height: '100px' }}>
+                                <div key={index} className="existing-image-box">
                                     <img
                                         src={img.startsWith('http') ? img : `/${img}`}
                                         alt={`Zdjęcie ${index + 1}`}
-                                        style={{ width: '100px', height: '100px', objectFit: 'cover', borderRadius: '6px', border: '1px solid #ddd' }}
+                                        className="existing-image-preview"
                                     />
                                     <button
                                         type="button"
                                         onClick={() => handleRemoveExistingImage(index)}
-                                        style={{
-                                            position: 'absolute', top: '-8px', right: '-8px',
-                                            background: '#ff0000', color: '#fff',
-                                            border: 'none', borderRadius: '50%',
-                                            width: '22px', height: '22px',
-                                            cursor: 'pointer', fontSize: '12px',
-                                            display: 'flex', alignItems: 'center', justifyContent: 'center'
-                                        }}
+                                        className="image-delete-overlay-btn"
                                     >✕</button>
                                 </div>
                             ))}
@@ -209,14 +217,14 @@ export default function EditProductPage({ params: paramsPromise }) {
                         className="search-input"
                     />
                     {files.length > 0 && (
-                        <p style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
+                        <p className="new-files-count-text">
                             Wybrano nowych plików: {files.length}
                         </p>
                     )}
                 </div>
 
-                <div className="row" style={{justifyContent: 'space-between', gap: '10px'}}>
-                    <div className="form-group" style={{flex: 1}}>
+                <div className="flex-form-row">
+                    <div className="form-group flex-form-item">
                         <label>Cena (PLN): *</label>
                         <input
                             type="number"
@@ -225,14 +233,13 @@ export default function EditProductPage({ params: paramsPromise }) {
                             step="0.01"
                             value={formData.price_pln}
                             onChange={handleChange}
-                            className="search-input"
-                            style={inputStyle('price_pln')}
+                            className={inputClassName('price_pln')}
                         />
                         <ErrorMsg field="price_pln" />
                     </div>
-                    <div className="form-group" style={{flex: 1}}>
+                    <div className="form-group flex-form-item">
                         <label>Gatunek:</label>
-                        <select name="type" value={formData.type} onChange={handleChange} className="search-input" style={{width: '100%'}}>
+                        <select name="type" value={formData.type} onChange={handleChange} className="search-input input-full-width" style={{width: '100%'}}>
                             {ALL_GENRES.map(genre => (
                                 <option key={genre} value={genre}>{genre}</option>
                             ))}
@@ -247,14 +254,14 @@ export default function EditProductPage({ params: paramsPromise }) {
                         name="publisher"
                         value={formData.publisher || ""}
                         onChange={handleChange}
-                        className="search-input"
+                        className="search-input input-full-width"
                         style={{width: '100%'}}
                         placeholder="Nazwa wydawcy"
                     />
                 </div>
 
-                <div className="row" style={{justifyContent: 'space-between', gap: '10px'}}>
-                    <div className="form-group" style={{flex: 1}}>
+                <div className="flex-form-row">
+                    <div className="form-group flex-form-item">
                         <label>Min. graczy: *</label>
                         <input
                             type="number"
@@ -262,12 +269,11 @@ export default function EditProductPage({ params: paramsPromise }) {
                             min="1"
                             value={formData.min_players}
                             onChange={handleChange}
-                            className="search-input"
-                            style={inputStyle('min_players')}
+                            className={inputClassName('min_players')}
                         />
                         <ErrorMsg field="min_players" />
                     </div>
-                    <div className="form-group" style={{flex: 1}}>
+                    <div className="form-group flex-form-item">
                         <label>Max. graczy: *</label>
                         <input
                             type="number"
@@ -275,12 +281,11 @@ export default function EditProductPage({ params: paramsPromise }) {
                             min="1"
                             value={formData.max_players}
                             onChange={handleChange}
-                            className="search-input"
-                            style={inputStyle('max_players')}
+                            className={inputClassName('max_players')}
                         />
                         <ErrorMsg field="max_players" />
                     </div>
-                    <div className="form-group" style={{flex: 1}}>
+                    <div className="form-group flex-form-item">
                         <label>Czas (min): *</label>
                         <input
                             type="number"
@@ -288,8 +293,7 @@ export default function EditProductPage({ params: paramsPromise }) {
                             min="1"
                             value={formData.avg_play_time_minutes}
                             onChange={handleChange}
-                            className="search-input"
-                            style={inputStyle('avg_play_time_minutes')}
+                            className={inputClassName('avg_play_time_minutes')}
                         />
                         <ErrorMsg field="avg_play_time_minutes" />
                     </div>
@@ -300,10 +304,8 @@ export default function EditProductPage({ params: paramsPromise }) {
                     <textarea
                         name="description"
                         rows="6"
-                        value={formData.description}
-                        onChange={handleChange}
-                        className="search-input"
-                        style={{width: '100%', fontFamily: 'inherit'}}
+                        ref={descriptionRef}
+                        className="search-input textarea-description"
                     ></textarea>
                 </div>
 
@@ -314,11 +316,11 @@ export default function EditProductPage({ params: paramsPromise }) {
                     </label>
                 </div>
 
-                <div style={{marginTop: '30px', display: 'flex', gap: '10px'}}>
+                <div className="edit-actions-wrapper">
                     <button type="submit" className="btn" disabled={isUploading}>
                         {isUploading ? "Zapisywanie..." : "Zapisz zmiany"}
                     </button>
-                    <Link href={`/product/${gameId}`} className="btn" style={{background: '#555'}}>Anuluj</Link>
+                    <Link href={`/product/${gameId}`} className="btn cancel-btn">Anuluj</Link>
                 </div>
             </form>
         </div>

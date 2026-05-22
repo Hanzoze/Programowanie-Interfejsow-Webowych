@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import { db } from "@/app/lib/firebase";
 import { collection, query, limit, startAfter, getDocs, where, orderBy } from "firebase/firestore";
@@ -87,18 +87,20 @@ export default function Home() {
         }
     };
 
-    const filteredItems = boardGames.filter(game => {
-        const matchesSearch = (game.title || "").toLowerCase().includes(search.toLowerCase());
-        const matchesPrice = game.price_pln <= Number(maxPrice);
-        const matchesPlayers = playerCount === "all" || (
-            Number(playerCount) >= game.min_players &&
-            Number(playerCount) <= game.max_players
-        );
-        const matchesExpansion = isExpansion === "all" || (
-            isExpansion === "expansion" ? game.is_expansion === true : game.is_expansion === false
-        );
-        return matchesSearch && matchesPrice && matchesPlayers && matchesExpansion;
-    });
+    const filteredItems = useMemo(() => {
+        return boardGames.filter(game => {
+            const matchesSearch = (game.title || "").toLowerCase().includes(search.toLowerCase());
+            const matchesPrice = game.price_pln <= Number(maxPrice);
+            const matchesPlayers = playerCount === "all" || (
+                Number(playerCount) >= game.min_players &&
+                Number(playerCount) <= game.max_players
+            );
+            const matchesExpansion = isExpansion === "all" || (
+                isExpansion === "expansion" ? game.is_expansion === true : game.is_expansion === false
+            );
+            return matchesSearch && matchesPrice && matchesPlayers && matchesExpansion;
+        });
+    }, [boardGames, search, maxPrice, playerCount, isExpansion]);  
 
     return (
         <main className="small-container">

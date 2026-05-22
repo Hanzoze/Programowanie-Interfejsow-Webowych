@@ -1,5 +1,6 @@
 import "./globals.css";
 import { AuthContextProvider } from "./context/AuthContext";
+import { CartProvider } from "./context/CartContext"; 
 import Navbar from "./components/Navbar";
 
 export const metadata = {
@@ -16,52 +17,54 @@ export default function RootLayout({ children }) {
       </head>
       <body>
         <AuthContextProvider>
-          <header className="header">
-            <div className="container">
-              <Navbar /> 
-            </div>
-          </header>
+          <CartProvider>
+            <header className="header">
+              <div className="container">
+                <Navbar /> 
+              </div>
+            </header>
 
-          {children}
+            {children}
 
-          <div className="footer">
-            <div className="container">
-              <div className="row">
-                <div className="footer-col-1">
-                  <h3>Download our app</h3>
-                  <p>Download our app for Android and iOS</p>
-                  <div className="app-logo">
-                    <img src="/img/play-store.png" alt="play store" />
-                    <img src="/img/app-store.png" alt="app store" />
+            <div className="footer">
+              <div className="container">
+                <div className="row">
+                  <div className="footer-col-1">
+                    <h3>Download our app</h3>
+                    <p>Download our app for Android and iOS</p>
+                    <div className="app-logo">
+                      <img src="/img/play-store.png" alt="play store" />
+                      <img src="/img/app-store.png" alt="app store" />
+                    </div>
+                  </div>
+                  <div className="footer-col-2">
+                    <img src="/img/logo.png" alt="logo footer" />
+                    <p>Our purpose is to spread joy and laughter across the globe</p>
+                  </div>
+                  <div className="footer-col-3">
+                    <h3>Useful Links</h3>
+                    <ul>
+                      <li>Coupons</li>
+                      <li>Blog Post</li>
+                      <li>Return Policy</li>
+                      <li>Join Affiliate</li>
+                    </ul>
+                  </div>
+                  <div className="footer-col-4">
+                    <h3>Follow us</h3>
+                    <ul>
+                      <li>Facebook</li>
+                      <li>Twitter</li>
+                      <li>Instagram</li>
+                      <li>YouTube</li>
+                    </ul>
                   </div>
                 </div>
-                <div className="footer-col-2">
-                  <img src="/img/logo.png" alt="logo footer" />
-                  <p>Our purpose is to spread joy and laughter across the globe</p>
-                </div>
-                <div className="footer-col-3">
-                  <h3>Useful Links</h3>
-                  <ul>
-                    <li>Coupons</li>
-                    <li>Blog Post</li>
-                    <li>Return Policy</li>
-                    <li>Join Affiliate</li>
-                  </ul>
-                </div>
-                <div className="footer-col-4">
-                  <h3>Follow us</h3>
-                  <ul>
-                    <li>Facebook</li>
-                    <li>Twitter</li>
-                    <li>Instagram</li>
-                    <li>YouTube</li>
-                  </ul>
-                </div>
+                <hr />
+                <p className="copyright">For study purposes only</p>
               </div>
-              <hr />
-              <p className="copyright">For study purposes only</p>
             </div>
-          </div>
+          </CartProvider>
         </AuthContextProvider>
       </body>
     </html>
